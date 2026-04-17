@@ -1,0 +1,43 @@
+-- Tabela Principal de Vendas
+CREATE TABLE vendas (
+    id SERIAL PRIMARY KEY,
+    data_venda TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    id_cliente INTEGER,
+    id_produto INTEGER,
+    quantidade INTEGER,
+    valor_unitario DECIMAL(10,2),
+    valor_total DECIMAL(10,2),
+    forma_pagamento VARCHAR(50),
+    categoria VARCHAR(100),
+    tamanho VARCHAR(10),
+    cor VARCHAR(50)
+);
+
+-- Tabela de Produtos
+CREATE TABLE produtos (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(200),
+    categoria VARCHAR(100),
+    tamanho VARCHAR(10),
+    cor VARCHAR(50),
+    preco_custo DECIMAL(10,2),
+    preco_venda DECIMAL(10,2),
+    estoque_atual INTEGER,
+    estoque_minimo INTEGER
+);
+
+-- Tabela de Clientes
+CREATE TABLE clientes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(200),
+    email VARCHAR(100),
+    telefone VARCHAR(20),
+    data_cadastro DATE,
+    cidade VARCHAR(100),
+    frequencia_compra INTEGER DEFAULT 0
+);
+
+-- Índices para performance
+CREATE INDEX idx_vendas_data ON vendas(data_venda);
+CREATE INDEX idx_vendas_categoria ON vendas(categoria);
+CREATE INDEX idx_vendas_cliente ON vendas(id_cliente);
