@@ -1,0 +1,6 @@
+[Fontes de Dados] → [ETL] → [Data Warehouse] → [Análise & BI] → [Dashboards]
+     ↓                 ↓           ↓              ↓             ↓
+Vendas/POS    →   Python ETL  →  PostgreSQL  →  Power BI  →  Decisões Estratégicas
+Estoque       →              →             →  Python    →  
+Clientes CRM  →              →             →  Streamlit →  
+Redes Sociais→              →             →           →  
