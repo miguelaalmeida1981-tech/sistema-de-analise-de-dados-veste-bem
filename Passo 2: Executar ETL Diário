@@ -1,0 +1,2 @@
+# Crontab para ETL diário às 2h
+0 2 * * * /usr/bin/python3 /path/to/etl_pipeline.py
