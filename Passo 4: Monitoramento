@@ -1,0 +1,2 @@
+# Docker Compose para produção
+docker-compose up -d
