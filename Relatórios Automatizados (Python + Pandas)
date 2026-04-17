@@ -1,0 +1,30 @@
+def gerar_relatorio_semanal():
+    """Gera relatório semanal automático"""
+    hoje = datetime.now()
+    inicio_semana = hoje - timedelta(days=hoje.weekday() + 7)
+    
+    query = f"""
+    SELECT 
+        categoria,
+        SUM(valor_total) as faturamento,
+        AVG(margem_lucro) as margem_media,
+        COUNT(DISTINCT id_cliente) as clientes_unicos
+    FROM vendas_analiticas 
+    WHERE data_venda >= '{inicio_semana}'
+    GROUP BY categoria
+    ORDER BY faturamento DESC
+    """
+    
+    df_relatorio = pd.read_sql(query, engine)
+    
+    # Exportar para Excel
+    with pd.ExcelWriter('relatorio_semanal.xlsx') as writer:
+        df_relatorio.to_excel(writer, sheet_name='Resumo', index=False)
+        
+        # Gráfico automático
+        fig = px.bar(df_relatorio.head(10), x='categoria', y='faturamento')
+        fig.write_image('top_categorias.png')
+    
+    return df_relatorio
+
+# Agendar com cron: 0 9 * * 1 python relatorio_semanal.py
