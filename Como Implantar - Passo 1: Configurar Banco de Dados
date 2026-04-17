@@ -1,0 +1,6 @@
+# Instalar PostgreSQL
+sudo apt install postgresql
+
+# Criar banco e usuário
+createdb vestebem
+psql vestebem -c "CREATE USER vestebem WITH PASSWORD 'senha123';"
