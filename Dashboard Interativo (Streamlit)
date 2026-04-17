@@ -1,0 +1,84 @@
+import streamlit as st
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import pandas as pd
+import numpy as np
+from sqlalchemy import create_engine
+
+st.set_page_config(page_title="Veste Bem BI", layout="wide")
+
+@st.cache_data
+def load_data():
+    engine = create_engine('postgresql://user:password@localhost/vestebem')
+    return pd.read_sql("SELECT * FROM vendas_analiticas", engine)
+
+df = load_data()
+
+st.title("🛍️ Dashboard Veste Bem - Análise Estratégica")
+st.markdown("---")
+
+# Sidebar com filtros
+st.sidebar.header("Filtros")
+col1, col2 = st.sidebar.columns(2)
+with col1:
+    data_inicio = st.date_input("Data Início", df['data_venda'].min())
+with col2:
+    data_fim = st.date_input("Data Fim", df['data_venda'].max())
+
+filtro_categoria = st.sidebar.multiselect("Categoria", 
+                                        options=df['categoria'].unique(),
+                                        default=df['categoria'].unique())
+
+df_filtrado = df[
+    (df['data_venda'] >= pd.Timestamp(data_inicio)) &
+    (df['data_venda'] <= pd.Timestamp(data_fim)) &
+    (df['categoria'].isin(filtro_categoria))
+]
+
+# KPIs Principais
+col1, col2, col3, col4 = st.columns(4)
+total_vendas = df_filtrado['valor_total'].sum()
+total_itens = df_filtrado['quantidade'].sum()
+ticket_medio = total_vendas / len(df_filtrado[df_filtrado['valor_total'] > 0])
+margem_media = df_filtrado['margem_lucro'].mean()
+
+with col1:
+    st.metric("💰 Faturamento", f"R$ {total_vendas:,.2f}")
+with col2:
+    st.metric("📦 Itens Vendidos", f"{total_itens:,}")
+with col3:
+    st.metric("💳 Ticket Médio", f"R$ {ticket_medio:.2f}")
+with col4:
+    st.metric("📊 Margem Média", f"{margem_media:.1f}%")
+
+# Gráficos
+col1, col2 = st.columns(2)
+
+with col1:
+    # Vendas por dia
+    vendas_diarias = df_filtrado.groupby(df_filtrado['data_venda'].dt.date)['valor_total'].sum().reset_index()
+    fig1 = px.line(vendas_diarias, x='data_venda', y='valor_total', 
+                   title="Vendas Diárias")
+    st.plotly_chart(fig1, use_container_width=True)
+
+with col2:
+    # Top categorias
+    top_categorias = df_filtrado.groupby('categoria')['valor_total'].sum().sort_values(ascending=False).head(10)
+    fig2 = px.bar(x=top_categorias.index, y=top_categorias.values,
+                  title="Top 10 Categorias")
+    st.plotly_chart(fig2, use_container_width=True)
+
+# Análise de estoque crítico
+st.subheader("⚠️ Estoque Crítico")
+estoque_critico = df_filtrado.groupby(['categoria', 'tamanho'])['quantidade'].sum().reset_index()
+fig3 = px.treemap(estoque_critico, path=[px.Constant('estoque'), 'categoria', 'tamanho'], 
+                  values='quantidade', title="Distribuição de Vendas por Categoria/Tamanho")
+st.plotly_chart(fig3, use_container_width=True)
+
+# Previsão de demanda (simplificada)
+st.subheader("🔮 Previsão de Demanda")
+if st.button("Gerar Previsão"):
+    tendencia = df_filtrado.groupby(df_filtrado['data_venda'].dt.to_period('D')).size()
+    fig4 = px.line(tendencia, title="Tendência de Vendas (30 dias)")
+    st.plotly_chart(fig4, use_container_width=True)
