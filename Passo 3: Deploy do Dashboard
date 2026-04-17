@@ -1,0 +1,2 @@
+pip install streamlit plotly pandas psycopg2-binary
+streamlit run dashboard.py --server.port 8501 --server.address 0.0.0.0
