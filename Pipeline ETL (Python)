@@ -1,0 +1,55 @@
+import pandas as pd
+import psycopg2
+from sqlalchemy import create_engine
+import yfinance as yf
+from datetime import datetime, timedelta
+import warnings
+warnings.filterwarnings('ignore')
+
+class ETLPipeline:
+    def __init__(self):
+        self.engine = create_engine('postgresql://user:password@localhost/vestebem')
+    
+    def extract_pos_data(self):
+        """Extrai dados do sistema POS"""
+        query = """
+        SELECT * FROM vendas 
+        WHERE data_venda >= CURRENT_DATE - INTERVAL '30 days'
+        """
+        return pd.read_sql(query, self.engine)
+    
+    def extract_estoque(self):
+        """Extrai dados de estoque"""
+        query = "SELECT * FROM produtos WHERE estoque_atual > 0"
+        return pd.read_sql(query, self.engine)
+    
+    def transform_data(self, df_vendas, df_estoque):
+        """Transforma e enriquece os dados"""
+        # Cálculo de margem de lucro
+        df_vendas = df_vendas.merge(
+            df_estoque[['id', 'preco_custo']], 
+            left_on='id_produto', 
+            right_on='id', 
+            how='left'
+        )
+        df_vendas['margem_lucro'] = (
+            (df_vendas['valor_total'] - 
+             (df_vendas['preco_custo'] * df_vendas['quantidade'])) 
+            / df_vendas['valor_total'] * 100
+        )
+        
+        # Segmentação de clientes
+        df_vendas['cliente_frequente'] = df_vendas.groupby('id_cliente')['id_cliente'].transform('size') > 3
+        
+        return df_vendas
+    
+    def load_data(self, df):
+        """Carrega dados processados"""
+        df.to_sql('vendas_analiticas', self.engine, if_exists='replace', index=False)
+
+# Executar ETL
+etl = ETLPipeline()
+df_vendas = etl.extract_pos_data()
+df_estoque = etl.extract_estoque()
+df_final = etl.transform_data(df_vendas, df_estoque)
+etl.load_data(df_final)
